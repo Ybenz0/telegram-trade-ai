@@ -4,8 +4,10 @@ from openai import OpenAI
 import base64
 import os
 
+# Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Function to handle incoming photos
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     photo = update.message.photo[-1]
     file = await context.bot.get_file(photo.file_id)
@@ -27,6 +29,11 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(response.choices[0].message.content)
 
+# 🔹 THIS IS CRUCIAL: Define the app BEFORE run_webhook
+app = ApplicationBuilder().token(os.getenv("TELEGRAM_TOKEN")).build()
+app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+
+# Run webhook (Render requires this)
 app.run_webhook(
     listen="0.0.0.0",
     port=int(os.environ.get("PORT", 10000)),
