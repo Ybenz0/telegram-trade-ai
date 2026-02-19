@@ -4,38 +4,34 @@ from openai import OpenAI
 import base64
 import os
 
-# Initialize OpenAI client
+# Initialize OpenAI client using environment variable
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Function to handle incoming photos
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    photo = update.message.photo[-1]
-    file = await context.bot.get_file(photo.file_id)
-    path = await file.download_to_drive()
+    try:
+        # Reply immediately to confirm receipt
+        await update.message.reply_text("✅ Screenshot received, analyzing...")
 
-    with open(path, "rb") as f:
-        image_base64 = base64.b64encode(f.read()).decode()
+        # Get the highest-resolution photo
+        photo = update.message.photo[-1]
+        file = await context.bot.get_file(photo.file_id)
+        path = await file.download_to_drive()
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{
-            "role":"user",
-            "content":[
-                {"type":"text","text":"Analyze this stock chart and tell me BUY, SELL or HOLD with explanation."},
-                {"type":"image_url","image_url":{"url":f"data:image/png;base64,{image_base64}"}}
-            ]
-        }]
-    )
+        # Convert image to base64
+        with open(path, "rb") as f:
+            image_base64 = base64.b64encode(f.read()).decode()
 
-    await update.message.reply_text(response.choices[0].message.content)
+        # Ask OpenAI to analyze the chart
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Analyze this stock chart and tell me BUY, SELL, or HOLD with explanation."},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}}
+                ]
+            }]
+        )
 
-# 🔹 THIS IS CRUCIAL: Define the app BEFORE run_webhook
-app = ApplicationBuilder().token(os.getenv("TELEGRAM_TOKEN")).build()
-app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-
-# Run webhook (Render requires this)
-app.run_webhook(
-    listen="0.0.0.0",
-    port=int(os.environ.get("PORT", 10000)),
-    webhook_url=os.getenv("RENDER_URL")
-)
+        # Send OpenAI reply to Telegram
