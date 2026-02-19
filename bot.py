@@ -28,10 +28,5 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             messages=[{
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Analyze this stock chart and tell me BUY, SELL, or HOLD with explanation."},
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}}
-                ]
-            }]
-        )
+                    {"type": "text", "text": "Analyze this stock chart a
 
-        # Send OpenAI reply to Telegram
